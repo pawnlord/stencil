@@ -4,16 +4,18 @@ from PIL import Image
 from PIL import ImageMode
 import numpy as np
 
-options = {"file":"", "encrypt":True, "input":""}
+options = {"file":"", "encrypt":True, "input":"", "output":"output.png"}
+last_option = ""
 
 for o in range(1,len(sys.argv)):
-    if sys.argv[o] == "-d":
+    if len(sys.argv[o]) > 1 and sys.argv[o][0:2].lower() == "-d":
         options["encrypt"] = False
-    elif sys.argv[o] == "-i":
-        if len(sys.argv) == o+1 or sys.argv[o+1][0] == '-':
-            print("[stan] Input implied, but none given")
-            exit()
-        options["input"] = sys.argv[o+1]
+    elif sys.argv[o][0] == "-":
+        last_option = sys.argv[o]
+    elif last_option == "-i":
+        options["input"] = sys.argv[o]
+    elif last_option == "-o":
+        options["output"] = sys.argv[o]
     else:
         options["file"] = sys.argv[o]
     
@@ -54,7 +56,7 @@ if options["encrypt"]:
 
     final = np.asarray(formatted_new, dtype=np.uint8)
     im = pil.Image.fromarray(final)
-    im.save("output.png")
+    im.save(options["output"])
 else:
     length = int(input("length? "))
     im = pil.Image.open(options["file"])
