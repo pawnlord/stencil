@@ -7,9 +7,11 @@ import numpy as np
 options = {"file":"", "encrypt":True, "input":"", "output":"output.png"}
 last_option = ""
 
-for o in range(1,len(sys.argv)):
+after_program = False
+for o in range(0,len(sys.argv)):
     if len(sys.argv[o]) > 1 and sys.argv[o][0:2].lower() == "-d":
         options["encrypt"] = False
+        options["output"] = ""
     elif sys.argv[o][0] == "-":
         last_option = sys.argv[o]
     elif last_option == "-i":
@@ -69,5 +71,9 @@ else:
         value = i%3
         bit = ((original[pixel][value] & 1) << i%8) 
         data[-1] = (data[-1] | bit) 
-    print(bytes(data))
-        
+    if options["output"] != "":
+        with open(options["output"], "wb") as fp:
+            fp.write(bytes(data))
+    else:
+        print(bytes(data))
+            
