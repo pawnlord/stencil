@@ -1,4 +1,9 @@
 import sys
+import PIL as pil
+from PIL import Image
+from PIL import ImageMode
+import numpy as np
+
 options = {"file":"", "encrypt":True, "input":""}
 
 for o in range(1,len(sys.argv)):
@@ -18,47 +23,49 @@ if options["file"] == "":
 
 
 if options["encrypt"]:
-    original = b""
-    with open(options["file"], "rb") as out:
-        original = out.read()
+    im = pil.Image.open(options["file"])
+    original = list(im.getdata())
+
+    width, height = im.size
+    im.close()
     inp = b""
+
     if options["input"] == "":
         inp = input("message? ").encode('utf-8')
     else:
         with open(options["input"], "rb") as input_file:
             inp = input_file.read()
-    start = -1
-    for i in range(len(original)-2):
-        if original[i+1] == 0xDA and original[i] == 0xFF:
-            start = i+2
-            break
-    if start == -1:
-        print("[stan] Does not seem to be a JPG or PNG file, moving on...")
-    
-    new = bytearray(original)
-    for i in range(start, start+(len(inp)*8)):
-        inpn = (i-start)//8
-        bitn = (i-start)%8
-        bit = (inp[inpn] >> bitn) & 1
-        new[i] = (original[i] | bit) & bit
-    with open("output.jpg", "wb") as out:
-        out.write(bytes(new))
 
+    new = [list(t) for t in original]
+    for i in range(0, len(inp)*8):
+        inpn = (i)//8
+        bitn = (i)%8
+        bit = (inp[inpn] >> bitn) & 1
+        pixel = i//3
+        value = i%3
+        new[pixel][value] = (original[pixel][value] | bit) & bit
+
+    formatted_new = [] #[[tuple(new[(i*im.height) + j]) for j in range(im.height) ] for i in range(im.width)]
+    for i in range(height):
+        formatted_new.append([])
+        for j in range(width):
+            formatted_new[i].append(tuple(new[(i*width) + j]))
+    # format array
+
+    final = np.asarray(formatted_new, dtype=np.uint8)
+    im = pil.Image.fromarray(final)
+    im.save("output.png")
 else:
     length = int(input("length? "))
-    original = b""
-    with open(options["file"], "rb") as out:
-        original = out.read()
-    start = -1
-    for i in range(len(original)-2):
-        if original[i+1] == 0xDA and original[i] == 0xFF:
-            start = i+2
-
-    message = bytearray()
-
-    for i in range(start, start+length*8):
-        if (i-start)%8 == 0:
-            message.append(0)
-        bit = original[i] & 1
-        message[-1] = (message[-1] | (bit<<((i-start)%8)) )
-    print(bytes(message))
+    im = pil.Image.open(options["file"])
+    original = list(im.getdata())
+    data = []
+    for i in range(length*8):
+        if i%8 == 0:
+            data.append(0)
+        pixel = i//3
+        value = i%3
+        bit = ((original[pixel][value] & 1) << i%8) 
+        data[-1] = (data[-1] | bit) 
+    print(bytes(data))
+        
